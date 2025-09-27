@@ -35,7 +35,7 @@ jobs:
 
       - name: Download Prebuilt Skia
         run: |
-          curl -L https://github.com/aseprite/skia/releases/download/m102/Skia-Windows-Release-x64.zip -o skia.zip
+          curl -L https://github.com/aseprite/skia/releases/download/m124-08a5439a6b/Skia-Windows-Release-x64.zip -o skia.zip
           7z x skia.zip -osrc/skia
 
       - name: Build Aseprite
