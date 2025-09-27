@@ -33,14 +33,10 @@ jobs:
           cd src/aseprite
           git submodule update --init --recursive
 
-      - name: Build Skia (download + build)
+      - name: Download Prebuilt Skia
         run: |
-          cd src
-          git clone --depth=1 https://github.com/aseprite/skia.git
-          cd skia
-          python tools/git-sync-deps
-          bin/gn gen out/Release-x64 --args="is_debug=false is_official_build=true skia_use_system_expat=false skia_use_system_icu=false skia_use_system_libjpeg_turbo=false skia_use_system_libpng=false skia_use_system_libwebp=false skia_use_system_zlib=false target_cpu=\"x64\""
-          ninja -C out/Release-x64 skia
+          curl -L https://github.com/aseprite/skia/releases/download/m102/Skia-Windows-Release-x64.zip -o skia.zip
+          7z x skia.zip -osrc/skia
 
       - name: Build Aseprite
         run: |
