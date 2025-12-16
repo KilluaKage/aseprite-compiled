@@ -1,33 +1,34 @@
-name: Auto build Aseprite
+name: 🧱 Auto Build Aseprite
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * 0"   # every Sunday at 00:00 UTC
+    - cron: "0 0 * * 0" # every Sunday at 00:00 UTC
 
 permissions:
   contents: write
 
 jobs:
   auto-build:
-    name: Auto build Aseprite for Windows x64
+    name: 🪟 Build Aseprite for Windows x64
     runs-on: windows-2022
 
     steps:
-      - name: Checkout repository
+      - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Ninja
+      - name: ⚙️ Setup Ninja
         uses: ashutoshvarma/setup-ninja@v1.1
 
-      - name: Setup MSVC Developer Command Prompt
+      - name: 🧰 Setup MSVC Developer Command Prompt
         uses: TheMrMilchmann/setup-msvc-dev@v3
         with:
           arch: x64
 
-      - name: Clone Aseprite (latest stable tag)
+      - name: 📦 Clone Aseprite (latest stable tag)
+        shell: pwsh
         run: |
           git clone https://github.com/aseprite/aseprite.git src/aseprite
           cd src/aseprite
@@ -37,36 +38,43 @@ jobs:
           git checkout $latestTag
           git submodule update --init --recursive
 
-      - name: Download Prebuilt Skia
+      - name: 🎨 Download Prebuilt Skia
+        shell: pwsh
         run: |
           curl -L https://github.com/aseprite/skia/releases/download/m124-08a5439a6b/Skia-Windows-Release-x64.zip -o skia.zip
           7z x skia.zip -osrc/skia
 
-      - name: Download OpenSSL (Windows x64)
+      - name: 🛠️ Build Aseprite
+        shell: pwsh
         run: |
-          curl -L -o openssl.zip https://slproweb.com/download/Win64OpenSSL-1_1_1w.zip
-          7z x openssl.zip -oopenssl
-          copy .\openssl\bin\libcrypto-1_1-x64.dll ./build/bin
-            - name: Build Aseprite
-              run: |
-                mkdir build
-                cd build
-                cmake "${{ github.workspace }}/src/aseprite" -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel -DLAF_BACKEND=skia -DSKIA_DIR="${{ github.workspace }}/src/skia" -DSKIA_LIBRARY_DIR="${{ github.workspace }}/src/skia/out/Release-x64" -DSKIA_LIBRARY="${{ github.workspace }}/src/skia/out/Release-x64/skia.lib"
-                cmake --build . --config MinSizeRel --target aseprite
+          mkdir build
+          cd build
 
-      - name: Get version
+          cmake "${{ github.workspace }}/src/aseprite" `
+            -G Ninja `
+            -DCMAKE_BUILD_TYPE=MinSizeRel `
+            -DLAF_BACKEND=skia `
+            -DSKIA_DIR="${{ github.workspace }}/src/skia" `
+            -DSKIA_LIBRARY_DIR="${{ github.workspace }}/src/skia/out/Release-x64" `
+            -DSKIA_LIBRARY="${{ github.workspace }}/src/skia/out/Release-x64/skia.lib"
+
+          cmake --build . --config MinSizeRel --target aseprite
+
+      - name: 🏷️ Get version
         id: get_version
+        shell: pwsh
         run: |
           cd src/aseprite
           $version = git describe --tags --always
           echo "version=$version" >> $env:GITHUB_OUTPUT
 
-      - name: Zip Aseprite
+      - name: 📦 Zip Aseprite
+        shell: pwsh
         run: |
           cd build/bin
           7z a ../../Aseprite-Windows-x64-${{ steps.get_version.outputs.version }}.zip *
 
-      - name: GH Release
+      - name: 🚀 GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: Aseprite-Windows-x64-${{ steps.get_version.outputs.version }}
