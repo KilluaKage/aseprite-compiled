@@ -42,13 +42,18 @@ jobs:
           curl -L https://github.com/aseprite/skia/releases/download/m124-08a5439a6b/Skia-Windows-Release-x64.zip -o skia.zip
           7z x skia.zip -osrc/skia
 
-      - name: Build Aseprite
+      - name: Download OpenSSL (Windows x64)
         run: |
-          mkdir build
-          cd build
-          cmake "${{ github.workspace }}/src/aseprite" -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel -DLAF_BACKEND=skia -DSKIA_DIR="${{ github.workspace }}/src/skia" -DSKIA_LIBRARY_DIR="${{ github.workspace }}/src/skia/out/Release-x64" -DSKIA_LIBRARY="${{ github.workspace }}/src/skia/out/Release-x64/skia.lib"
-          cmake --build . --config MinSizeRel --target aseprite
-          copy "C:/Windows/System32/libcrypto-1_1-x64.dll" ./bin
+          curl -L -o openssl.zip https://slproweb.com/download/Win64OpenSSL-1_1_1w.zip
+          7z x openssl.zip -oopenssl
+          copy .\openssl\bin\libcrypto-1_1-x64.dll ./build/bin
+            - name: Build Aseprite
+              run: |
+                mkdir build
+                cd build
+                cmake "${{ github.workspace }}/src/aseprite" -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel -DLAF_BACKEND=skia -DSKIA_DIR="${{ github.workspace }}/src/skia" -DSKIA_LIBRARY_DIR="${{ github.workspace }}/src/skia/out/Release-x64" -DSKIA_LIBRARY="${{ github.workspace }}/src/skia/out/Release-x64/skia.lib"
+                cmake --build . --config MinSizeRel --target aseprite
+                copy "C:/Windows/System32/libcrypto-1_1-x64.dll" ./bin
 
       - name: Get version
         id: get_version
