@@ -27,16 +27,32 @@ jobs:
         with:
           arch: x64
 
-      - name: 📦 Clone Aseprite (latest stable tag)
+      - name: 🔐 Install vcpkg + OpenSSL 3
+        shell: pwsh
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg
+          .\bootstrap-vcpkg.bat
+          .\vcpkg install openssl:x64-windows
+
+      - name: 📦 Clone Aseprite (latest stable release)
         shell: pwsh
         run: |
           git clone https://github.com/aseprite/aseprite.git src/aseprite
           cd src/aseprite
           git fetch --tags
-          $latestTag = git describe --tags (git rev-list --tags --max-count=1)
-          echo "Latest tag: $latestTag"
-          git checkout $latestTag
+
+          # Get latest stable tag (exclude beta / rc)
+          $stableTag = git tag `
+            | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' } `
+            | Sort-Object { [version]($_ -replace '^v','') } `
+            | Select-Object -Last 1
+
+          echo "Stable tag selected: $stableTag"
+
+          git checkout $stableTag
           git submodule update --init --recursive
+
 
       - name: 🎨 Download Prebuilt Skia
         shell: pwsh
@@ -56,9 +72,14 @@ jobs:
             -DLAF_BACKEND=skia `
             -DSKIA_DIR="${{ github.workspace }}/src/skia" `
             -DSKIA_LIBRARY_DIR="${{ github.workspace }}/src/skia/out/Release-x64" `
-            -DSKIA_LIBRARY="${{ github.workspace }}/src/skia/out/Release-x64/skia.lib"
+            -DSKIA_LIBRARY="${{ github.workspace }}/src/skia/out/Release-x64/skia.lib" `
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
 
           cmake --build . --config MinSizeRel --target aseprite
+
+          # Copy OpenSSL runtime DLLs
+          copy "${{ github.workspace }}/vcpkg/installed/x64-windows/bin/libcrypto-3-x64.dll" bin/
+          copy "${{ github.workspace }}/vcpkg/installed/x64-windows/bin/libssl-3-x64.dll" bin/
 
       - name: 🏷️ Get version
         id: get_version
